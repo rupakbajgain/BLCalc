@@ -1,3 +1,4 @@
+![Pylint](https://github.com/rupakbajgain/BLCalc/workflows/Pylint/badge.svg)
 BLCalc
 ==========
 This is the program to calculate bearing capacity directly from Excel Sheets(containing SPT datas).
