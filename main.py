@@ -2,7 +2,7 @@
 Main program
 """
 
-import logging
+    import logging
 
-logging.warning('Starting program')
-logging.warning('Ending program')
+    logging.warning('Starting program')
+    logging.warning('Ending program')
