@@ -1,3 +1,7 @@
+"""
+Main program
+"""
+
 import logging
 
 logging.warning('Starting program')
