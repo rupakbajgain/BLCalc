@@ -1,4 +1,9 @@
+Simple
+-------
+pip install -r requires.txt
 
+Complete
+-------
 pip install -r requirements.txt
 
 If there are any problems try virtual environment, and this project has dependencies which make it available on windows only (which may be later changed by turing these features on/off) due to programs available on windows (may be wine can run those too) .
