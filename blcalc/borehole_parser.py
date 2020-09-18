@@ -7,6 +7,16 @@ import re
 
 #use to split
 SPLIT_HELPER = re.compile('[(,) :]')
+TABLE_HEADER_HINTS = [
+    'scale', 'depth', 'thickness',
+    'sampling', 'type', 'classification',
+    'group', 'symbol', 'spt', 'value',
+    'n', 'gm', 'cm', 'm', '%', 'layer'
+        ]
+def _check_header_hit(text):
+    words = SPLIT_HELPER.split(text)
+    for i in words:
+        return i in TABLE_HEADER_HINTS
 
 class BoreholeLog:
     """
@@ -17,36 +27,25 @@ class BoreholeLog:
         """
         Get a single header based on highest hit of hints
         """
-        table_header_hints = ['scale', 'depth', 'thickness', 'sampling', 'type', 'classification', 'group', 'symbol', 'spt', 'value', 
-                             'n', 'gm', 'cm', 'm', '%', 'layer']
-        def check_header_hit(text):
-            words = SPLIT_HELPER.split(text)
-            for i in words:
-                if i in table_header_hints:
-                    return 1
-                else:
-                    return 0
         score_list = []
-        row_list = self._data['rows']
-        for i in range(len(row_list)):
+        for rows in self._data['rows']:
             score = 0
-            for j in range(len(row_list[i])):
-                if row_list[i][j].ctype==1:
-                    score += check_header_hit(row_list[i][j].value.lower())
+            for cell in rows:
+                if cell.ctype==1:
+                    score += _check_header_hit(cell.value.lower())
             score_list.append(score)
         header_row = 0
-        for i in range(len(row_list)):
-            if score_list[i] > score_list[header_row]:
-                header_row = i
+        for row in range(len(self._data['rows'])):
+            if score_list[row] > score_list[header_row]:
+                header_row = row
         if score_list[header_row] < 3: #SPT, depth, GI
-            #print('- Table not found')
             return None
         # for multi line header
         header_min = header_row
         header_max = header_row
         jump = True
-        while(header_min>=0):
-            if (score_list[header_min-1]>=score_list[header_row]/2):
+        while header_min>=0:
+            if score_list[header_min-1]>=score_list[header_row]/2:
                 header_min -= 1
                 jump = True
             elif jump:
@@ -56,8 +55,8 @@ class BoreholeLog:
                 break
         header_min += 1
         jump = True
-        while(header_max<=len(row_list)):
-            if (score_list[header_max+1]>=score_list[header_row]/2):
+        while header_max<=len(self._data['rows']):
+            if score_list[header_max+1]>=score_list[header_row]/2:
                 header_max += 1
                 jump = True
             elif jump:
@@ -66,17 +65,16 @@ class BoreholeLog:
             else:
                 break
         header_max -= 1
-        merged = self._data['merged_cells']
-        for i in merged:
+        for i in self._data['merged_cells']:
             #amin = amin-1
             (_, amin, _, amax)=i
             #print(header_min, header_max, '-' ,amin, amax, i)
-            if (amin <= header_min and amax >= header_min):
+            if amin <= header_min and amax >= header_min:
                 header_min = amin
-            if (amin <= header_max and amax >= header_max):
+            if amin <= header_max and amax >= header_max:
                 header_max = amax
         return (header_min, header_max)
-    
+
     def _get_attributes(self):
         """
         Get Attributes info like location, borehole no, ...
@@ -130,7 +128,7 @@ class BoreholeLog:
                             attributes[res[0]]=res[1]
                             old_text=''
         return attributes
-    
+
     def _row_list_expand(self):
         """
         Repeat each merged data
@@ -141,14 +139,13 @@ class BoreholeLog:
         def find_data(clo, rlo, chi, rhi):
             for i in range(rlo, rhi+1):
                 for j in range(clo, chi+1):
-                    if row_list[i][j].value:
-                        return row_list[i][j].value
+                    return row_list[i][j].value
         for i in merged:
             (clo, rlo, chi, rhi) = i
-            for i in range(rlo, rhi+1):
+            for row in range(rlo, rhi+1):
                 for j in range(clo, chi+1):
-                    row_list[i][j].ctype = 1
-                    row_list[i][j].value = find_data(clo, rlo, chi, rhi)
+                    row_list[row][j].ctype = 1
+                    row_list[row][j].value = find_data(clo, rlo, chi, rhi)
 
     def _get_map_var_row(self):
         """
@@ -173,26 +170,28 @@ class BoreholeLog:
                     if map_var_row[j][last_index].endswith(cval):
                         pass
                     else:
-                        if len(map_var_row[j][last_index]):
-                            map_var_row[j][last_index]=row_list[i][j].value+' '+map_var_row[j][last_index]
+                        if len(map_var_row[j][last_index])>0:
+                            map_var_row[j][last_index]=row_list[i][j].value+\
+                                ' '+map_var_row[j][last_index]
                         else:
                             map_var_row[j][last_index]=row_list[i][j].value
         return map_var_row
 
-    def _get_best_columns(self,rfields,forcedFields=[]):
+    def _get_best_columns(self,rfields,forced_fields=None):
         """
         Select best comlumn based on constrains
         """
+        if forced_fields is None:
+            forced_fields = []
         map_var_row = self._map_var_row
         winners = []
-        win_row = 0
         win_count = 0
         win_length = 0 #check only if more than one match(%)
         # Get the best field columnns for requested variables with hints
-        for i,d in enumerate(map_var_row):
+        for i,data in enumerate(map_var_row):
             this_row_count = 0
             this_word = ''
-            for j in d:
+            for j in data:
                 for k in rfields:
                     this_word += j.lower()+' '
                     if k in SPLIT_HELPER.split(j.lower()):
@@ -200,13 +199,12 @@ class BoreholeLog:
             split_words = SPLIT_HELPER.split(this_word)
             this_length = len(split_words)
             found = True
-            for k in forcedFields:
+            for k in forced_fields:
                 if not k in split_words:
                     found = False
                     break
             if found:
                 if this_row_count>win_count:
-                    win_row = i
                     win_count = this_row_count
                     winners = [i]
                     win_length = this_length
@@ -225,11 +223,20 @@ class BoreholeLog:
         columns = {}
         columns['spt'] = self._get_best_columns(['spt','n','value'])
         columns['depth'] = self._get_best_columns(['depth','m'], ['depth'])
-        columns['sdepth'] = self._get_best_columns(['sampling', 'depth','m'], ['sampling', 'depth'])
-        if len(columns['sdepth'])<1:
-            columns['sdepth'] = self._get_best_columns(['sampiling', 'depth','m'], ['sampiling', 'depth'])# spelling mistake
+        columns['sdepth'] = self._get_best_columns(
+            ['sampling', 'depth','m'],
+            ['sampling', 'depth']
+                )
+        if len(columns['sdepth'])<1:# spelling mistake
+            columns['sdepth'] = self._get_best_columns(
+                ['sampiling', 'depth','m'],
+                ['sampiling', 'depth']
+                    )
         columns['thickness'] = self._get_best_columns(['thickness','m'], ['thickness'])
-        columns['classification'] = self._get_best_columns(['classification','soil'], ['classification'])
+        columns['classification'] = self._get_best_columns(
+            ['classification','soil'],
+            ['classification']
+                )
         columns['gsym'] = self._get_best_columns(['group','symbol'],['group'])
         columns['layer'] = self._get_best_columns(['layer'])
         columns['gamma'] = self._get_best_columns(['g','gm/cm3'])
@@ -263,7 +270,6 @@ class BoreholeLog:
         Extract SPT data based on best cols
         """
         # For spt
-        row_list = self._data['rows']
         header = self._header_pos
         spt_col = self._cols['spt']
         spt_data = []
@@ -278,9 +284,9 @@ class BoreholeLog:
                 spt_data.append(spt_data_1[i]+spt_data_2[i]) #ignore first and add other datas
         # lets assume our SPT is always less than 100
         spt_filtered = []
-        for (n, row) in spt_data:
-            if n<=100:
-                spt_filtered.append((n, row))
+        for (spt_n, row) in spt_data:
+            if spt_n<=100:
+                spt_filtered.append((spt_n, row))
         spt_data = spt_filtered
         #if(len(spt_data)==0):
         #    helper.fail("No spt data found")
@@ -291,7 +297,6 @@ class BoreholeLog:
         """
         Extract depth data from depth_col and sdepth_col
         """
-        row_list = self._data['rows']
         depth_col = self._cols['depth']
         sdepth_col = self._cols['sdepth']
         header = self._header_pos
@@ -305,9 +310,9 @@ class BoreholeLog:
             depth_data.extend(self._get_all_data(sdepth_col[0], 2))
         # lets assume our depth is always less than 60
         depth_filtered = []
-        for (n, row) in depth_data:
-            if n<60.:
-                depth_filtered.append((n, row))
+        for (depth, row) in depth_data:
+            if depth<60.:
+                depth_filtered.append((depth, row))
         depth_data = depth_filtered
         #if(len(depth_data)==0):
         #    #Proper error later
@@ -321,29 +326,28 @@ class BoreholeLog:
         """
         row_list = self._data['rows']
         gamma = self._cols['gamma']
-        wp = self._cols['wp']        
-        header = self._header_pos
+        water_percent = self._cols['wp']
 
         # For gamma
         gamma_data = []
         if len(gamma)==1:
-            gamma_data = get_all_data(row_list, header, gamma[0], 2)
+            gamma_data = self._get_all_data(gamma[0], 2)
         #merge y with wp now if available
         gamma_filtered = []
-        if len(wp)==1:
-            for v, rv in gamma_data:
-                if row_list[rv][wp[0]].ctype==2:
-                    w = row_list[rv][wp[0]].value
-                    if w:
-                        gamma_filtered.append((v/(1+w/100)+1, rv)) #@TODO: fix this formula
+        if len(water_percent)==1:
+            for gamma_value, gamma_row in gamma_data:
+                if row_list[gamma_row][water_percent[0]].ctype==2:
+                    water_per = row_list[gamma_row][water_percent[0]].value
+                    if water_per:
+                        gamma_filtered.append((gamma_value/(1+water_per/100)+1, gamma_row)) #@TODO: fix this formula
                     else:
-                        gamma_filtered.append((v, rv))
-            gamma_data = gamma_filtered            
+                        gamma_filtered.append((gamma_value, gamma_row))
+            gamma_data = gamma_filtered
         # lets assume our depth is always >1 and <4
         gamma_filtered = []
-        for (n, row) in gamma_data:
-            if n<4 and n>1:
-                gamma_filtered.append((n*9.81, row))
+        for (gamma_value, row) in gamma_data:
+            if gamma_value<4 and gamma_value>1:
+                gamma_filtered.append((gamma_value*9.81, row))
         gamma_data = gamma_filtered
         return gamma_data
 
@@ -353,11 +357,10 @@ class BoreholeLog:
         Read group table automatically
         First gain as much information about it
         """
-        row_list = self._data['rows']
         gsym = self._cols['gsym']
         layer = self._cols['layer']
         classification = self._cols['classification']
-        
+
         letters = ['G','S','M','C','O', 'W','P','M','C','L','H', 'I', 'F','T']
         group_data = []
         if len(gsym)==1:
@@ -369,21 +372,21 @@ class BoreholeLog:
         if len(classification)==1:
             helper_data.extend(self._get_all_data(classification[0], 1))
         #Now try to extract info from helper_data
-        for (text, no) in helper_data:
-            for i in split_helper.split(text):
-                i = i.strip()
-                if len(i)==1 or len(i)==2:
-                    group_data.append((i, no))
+        for (text, helper_row) in helper_data:
+            for data in SPLIT_HELPER.split(text):
+                text = data.strip()
+                if len(text)==1 or len(text)==2:
+                    group_data.append((text, helper_row))
         ## Filter those datas
         group_filtered = []
-        for (i, ro) in group_data:
-            i = i.upper().strip()
-            if len(i)==1:
-                i=i+i
-            if i[1]=="I": #Why I is it L
-                i=i[0]+"L"
-            if (i[1] in letters):
-                group_filtered.append((i, ro))
+        for (data, row) in group_data:
+            text = data.upper().strip()
+            if len(text)==1:
+                text=text+text
+            if text[1]=="I": #Why I is it L
+                text=text[0]+"L"
+            if text[1] in letters:
+                group_filtered.append((text, row))
         group_data = group_filtered
         #if(len(group_data)==0):
         #    helper.fail("No group data found")
@@ -396,47 +399,47 @@ class BoreholeLog:
         return updates depth values & (depth vs spt)
         """
         map_d_s = []
-        for (a, drow) in depth_data:
+        for (value_depth, drow) in depth_data:
             amin = 0
             min_v = 0
             amax = 100
             max_v = 100
             found=False
-            for (b, srow) in spt_data:
+            for (value_spt, srow) in spt_data:
                 if srow==drow:
                     found=True
-                    map_d_s.append((a, b))
+                    map_d_s.append((value_depth, value_spt))
                     break
                 elif srow>amin and srow<drow:
                     amin = srow
-                    min_v = b
+                    min_v = value_spt
                 elif srow<amax and srow>drow:
                     amax = srow
-                    max_v = b
+                    max_v = value_spt
             if not found:
-                b = (max_v - min_v)/(amax - amin) * (drow- amin)  + min_v
-                map_d_s.append((a, b))
+                interpolated_spt = (max_v - min_v)/(amax - amin) * (drow- amin)  + min_v
+                map_d_s.append((value_depth, interpolated_spt))
         depth_update = []
-        for (b, srow) in spt_data:
+        for (value_spt, srow) in spt_data:
             amin = 0
             min_v = 0
             amax = 100
             max_v = 100
             found=False
-            for (a, drow) in depth_data:
+            for (value_depth, drow) in depth_data:
                 if srow==drow:
                     found=True
                     break
                 elif drow>amin and drow<srow:
                     amin = drow
-                    min_v = a
+                    min_v = value_depth
                 elif drow<amax and drow>srow:
                     amax = drow
-                    max_v = a                
+                    max_v = value_depth
             if not found:
-                a = (max_v - min_v)/(amax - amin) * (srow- amin)  + min_v
-                map_d_s.append((a, b))
-                depth_update.append((a, srow))
+                interpolated_depth = (max_v - min_v)/(amax - amin) * (srow- amin)  + min_v
+                map_d_s.append((interpolated_depth, value_spt))
+                depth_update.append((interpolated_depth, srow))
         depth_data.extend(depth_update)
         return(depth_data,map_d_s)
 
@@ -484,7 +487,8 @@ class BoreholeLog:
             for (i,j) in data:
                 if i==depth:
                     return j
-                    
+            return None
+
         def find_data_row(depth):
             """
             Find data using row no as info,
@@ -496,7 +500,7 @@ class BoreholeLog:
                     row = data_row
                     break
             return row
-        
+
         def find_data_by_row(row, table):
             """
             the table should be ordered
@@ -521,7 +525,7 @@ class BoreholeLog:
                 res['gamma'] = find_data_by_row(row, gamma_data)
             #Analyse rem data if available
             rem_data = self._get_rem_data(row)
-            for data_key in rem_data.keys():
+            for data_key in rem_data:
                 res[data_key] = rem_data[data_key]
             out.append(res)
         return out
@@ -532,6 +536,9 @@ class BoreholeLog:
         """
         self._data = data
         self._header_pos = self._get_header_rows()
+        if self._header_pos is None:
+            self.values = None
+            return
         self.attributes = self._get_attributes()
         self._row_list_expand()
         self._map_var_row = self._get_map_var_row()

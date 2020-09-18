@@ -20,5 +20,4 @@ class TempNameGenerator:
         self.count += 1
         if self.count == 1:
             return self.start
-        else:
-            return self.start + str(self.count)
+        return self.start + str(self.count)

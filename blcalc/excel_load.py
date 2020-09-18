@@ -134,7 +134,7 @@ class BoreholeDataSheets:
                 filepath = Path(filename).parent / line.strip()
                 result = BoreholeDataSheets.load_file_excel(str(filepath.resolve()))
                 #enable excel file only no recursive
-                for key_name in result.keys():
+                for key_name in result:
                     generator = TempNameGenerator(key_name)
                     while True:#use generator to generate new name if duplicated
                         new_key_name = generator.next()
