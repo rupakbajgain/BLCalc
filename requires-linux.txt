@@ -1,4 +1,0 @@
-geopy
-xlrd
-openpyxl
-requests
