@@ -69,9 +69,9 @@ class BoreholeLog:
             #amin = amin-1
             (_, amin, _, amax)=i
             #print(header_min, header_max, '-' ,amin, amax, i)
-            if amin <= header_min and amax >= header_min:
+            if amax >= header_min >= amin:
                 header_min = amin
-            if amin <= header_max and amax >= header_max:
+            if amax >= header_max >= amin:
                 header_max = amax
         return (header_min, header_max)
 
@@ -346,7 +346,7 @@ class BoreholeLog:
         # lets assume our depth is always >1 and <4
         gamma_filtered = []
         for (gamma_value, row) in gamma_data:
-            if gamma_value<4 and gamma_value>1:
+            if 1<gamma_value<4:
                 gamma_filtered.append((gamma_value*9.81, row))
         gamma_data = gamma_filtered
         return gamma_data
@@ -410,10 +410,10 @@ class BoreholeLog:
                     found=True
                     map_d_s.append((value_depth, value_spt))
                     break
-                elif srow>amin and srow<drow:
+                elif drow>srow>amin:
                     amin = srow
                     min_v = value_spt
-                elif srow<amax and srow>drow:
+                elif amax>srow>drow:
                     amax = srow
                     max_v = value_spt
             if not found:
@@ -430,10 +430,10 @@ class BoreholeLog:
                 if srow==drow:
                     found=True
                     break
-                elif drow>amin and drow<srow:
+                if srow>drow>amin:
                     amin = drow
                     min_v = value_depth
-                elif drow<amax and drow>srow:
+                elif srow<drow<amax:
                     amax = drow
                     max_v = value_depth
             if not found:

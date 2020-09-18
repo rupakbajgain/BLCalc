@@ -6,13 +6,16 @@ Some initial setups
 
 import os
 import sys
+from pathlib import Path
 
 module_path = os.path.abspath(os.path.join('..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from blcalc import root_dir
-
 def test_data_dir():
-    path = root_dir() / 'testdata'
+    """
+    Returns path of test datas like excel
+    Used for test or notebook
+    """
+    path = Path(__file__).parent.parent / 'testdata'
     return path
