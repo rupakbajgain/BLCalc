@@ -382,10 +382,6 @@ class BoreholeLog:
         group_filtered = []
         for (data, row) in group_data:
             text = data.upper().strip()
-            if len(text)==1:
-                text=text+text
-            if text[1]=="I": #Why I is it L
-                text=text[0]+"L"
             if text[1] in letters:
                 group_filtered.append((text, row))
         group_data = group_filtered
