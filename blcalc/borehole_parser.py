@@ -339,7 +339,8 @@ class BoreholeLog:
                 if row_list[gamma_row][water_percent[0]].ctype==2:
                     water_per = row_list[gamma_row][water_percent[0]].value
                     if water_per:
-                        gamma_filtered.append((gamma_value/(1+water_per/100)+1, gamma_row)) #@TODO: fix this formula
+                        gamma_filtered.append((gamma_value/(1+water_per/100)+1, gamma_row))
+                        #@TODO: fix this formula
                     else:
                         gamma_filtered.append((gamma_value, gamma_row))
             gamma_data = gamma_filtered
@@ -410,7 +411,7 @@ class BoreholeLog:
                     found=True
                     map_d_s.append((value_depth, value_spt))
                     break
-                elif drow>srow>amin:
+                if drow>srow>amin:
                     amin = srow
                     min_v = value_spt
                 elif amax>srow>drow:
