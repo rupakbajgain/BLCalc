@@ -25,7 +25,7 @@ class Hansen:
 
     @staticmethod
     def Ny(phi):
-        return 1.8*(Hansen.Nq(phi)-1)*tan(phi)
+        return 1.5*(Hansen.Nq(phi)-1)*tan(phi)
     
     def calculate(self, depth):
         """
