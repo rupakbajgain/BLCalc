@@ -103,10 +103,7 @@ class Material:
         if packing_case==1:
             c_undrained=_clamp(c_undrained,0.21,25)
         elif packing_case==2:
-            c_undrained=_clamp(c_und (unsaved changes) Current Kernel Logo
-
-Python 3
-rained,25,80)
+            c_undrained=_clamp(c_undrained,25,80)
         elif packing_case==3:
             c_undrained=_clamp(c_undrained,80,150)
         elif packing_case==4:
@@ -182,9 +179,9 @@ rained,25,80)
 
         elasticity=None
         if self.is_clayey():
-            if packing_case<=2:#15-40
+            if packing_case==0:#15-40
                 elasticity= (15+40)/2 * n_60 * 100
-            elif packing_case<=4:#40-80
+            elif packing_case==1:#40-80
                 elasticity= (40+80)/2 * n_60 * 100
             else:#80-200
                 elasticity= (80+200)/2 * n_60 * 100
@@ -279,9 +276,7 @@ class LayerSoil:
         if no depth is given returns all saved materials
         """
         if depth is None:#Return all
-            return self._values (unsaved changes) Current Kernel Logo
-
-Python 3
+            return self._values
 
         if depth<self._values[0]['depth']:
             mat = copy.copy(self._values[0])
