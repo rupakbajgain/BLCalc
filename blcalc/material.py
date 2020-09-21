@@ -92,24 +92,10 @@ class Material:
         if self.is_clayey():
             c_undrained = self.qu(self._data['n60'])/2
             #c_undrained=_clamp(c_undrained, 10, 103)
-        if group_index in ('CG', 'GC'):
-            c_undrained=_clamp(c_undrained, 20, 25)
-        elif group_index == 'SM':
-            c_undrained=_clamp(c_undrained,20,50)
-        elif group_index == 'SC':
-            c_undrained=_clamp(c_undrained,5,75)
-        #fix based on packing state, something is wrong here
-        packing_case = self._data['_pc']
-        if packing_case==1:
-            c_undrained=_clamp(c_undrained,0.21,25)
-        elif packing_case==2:
-            c_undrained=_clamp(c_undrained,25,80)
-        elif packing_case==3:
-            c_undrained=_clamp(c_undrained,80,150)
-        elif packing_case==4:
-            c_undrained=_clamp(c_undrained,150,400)
         # Plasix calculation needs very small c_undrained
-        _clamp(c_undrained,0.21,1e8)#use 0.2 as per plasix recommendation
+        if c_undrained<0.21:
+            c_undrained = 0.21
+        #use 0.2 as per plasix recommendation
         return c_undrained#the cu is always 103 check with small value of n_60, some mistake maybe
 
     def _get_packing_state(self):
@@ -139,32 +125,7 @@ class Material:
         #Many tables are used need to be refactred
         """
         phi = self.phi(self._data['n60'])
-        group_index = self._data['GI']
-        packing_case = self._data['_pc']
-        if group_index[0]=='G':
-            if group_index[1]=='W':
-                phi=_clamp(phi, 33, 40)
-            else:
-                phi=_clamp(phi, 32, 44)
-        elif group_index[0]=='S':
-            if packing_case<=1:
-                phi = _clamp(phi,20,35)
-            elif packing_case==2:
-                phi = _clamp(phi,25,40)
-            elif packing_case==3:
-                phi = _clamp(phi,30,45)
-            elif packing_case==4:
-                phi = _clamp(phi,35,45)
-            else:
-                phi = _clamp(phi,40,60)
-        elif group_index[0]=='C':
-            if group_index[1]=='H':
-                phi = _clamp(phi, 17, 31)
-            else:
-                phi = _clamp(phi, 27, 35)
-        else:
-            phi = _clamp(phi, 23, 41)
-        ### Ok that was according to table but let's remove for clay
+        ### Ok let's remove for clay
         if self.is_clayey():
             phi=0.01 #very small value for plasix
         return phi
@@ -176,7 +137,6 @@ class Material:
         group_index = self._data['GI']
         n_60 = self._data['n60']
         packing_case = self._data['_pc']
-
         elasticity=None
         if self.is_clayey():
             if packing_case==0:#15-40
@@ -190,35 +150,6 @@ class Material:
                 elasticity= 5 * n_60 * 100
             else: #The OCR condition of cohesionless test cannot be determined, assume NC sand
                 elasticity= 10 * n_60 * 100
-        # Now check value ranges
-        """
-        if group_index[0] == 'S':
-            if group_index[1] == 'M':
-                elasticity=_clamp(elasticity, 10_000, 20_000)
-            if packing_case<=2:
-                elasticity=_clamp(elasticity, 2_000, 25_000)
-            elif packing_case==3:
-                elasticity=_clamp(elasticity, 15_000, 30_000)
-            else:
-                elasticity=_clamp(elasticity, 35_000, 55_000)
-            elasticity= _clamp(elasticity, 2_000, 55_000)
-        elif group_index[0] == 'G':
-            elasticity=_clamp(elasticity,70_000,170_000)
-        elif group_index[0]=='C':
-            if packing_case<=2:
-                elasticity=_clamp(elasticity,2_000, 20_000)
-            elif packing_case<=4:
-                elasticity=_clamp(elasticity,20_000, 40_000)
-            else:
-                elasticity=_clamp(elasticity,40_000,100_000)
-        elif group_index[0]=='M':
-            elasticity=_clamp(elasticity,4_000,30_000)
-        else:#min both
-            if packing_case<=2:
-                elasticity=_clamp(elasticity, 2_000, 20_000)
-            else:
-                elasticity=_clamp(elasticity, 10_000, 55_000)
-        """#remove clamp now
         return elasticity
 
     def __init__(self, input_data):
