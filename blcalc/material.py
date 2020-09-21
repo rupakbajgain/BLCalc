@@ -69,6 +69,19 @@ class Material:
         gamma=_clamp(gamma,10,2.8*9.81)#do we need this
         return gamma
 
+    # Note: The unconfined compressive strength value is two times undrained shear strength. The
+    # ultimate bearing capacity is approximately six times the undrained shear strength where C in
+    # CNc is the undrained shear strength. The value of Nc is 5.14 and 5.7 respectively by
+    # Meyerhof and Terzaghi.
+    # BC Mapping Bhadra 4
+
+    @staticmethod
+    def qu(N60):
+        """
+        Determine Qu from N60
+        """
+        return 0.29 * N60**0.72 * 100
+
     # correction from: https://civilengroup_indexneeringbible.com/subtopics.php?i=91
     def _get_cu(self):
         """
@@ -77,7 +90,7 @@ class Material:
         c_undrained=0
         group_index = self._data['GI']
         if self.is_clayey():
-            c_undrained = 0.29 * self._data['n60']**0.72 * 100
+            c_undrained = self.qu(self._data['n60'])/2
             #c_undrained=_clamp(c_undrained, 10, 103)
         if group_index in ('CG', 'GC'):
             c_undrained=_clamp(c_undrained, 20, 25)
@@ -90,13 +103,16 @@ class Material:
         if packing_case==1:
             c_undrained=_clamp(c_undrained,0.21,25)
         elif packing_case==2:
-            c_undrained=_clamp(c_undrained,25,80)
+            c_undrained=_clamp(c_und (unsaved changes) Current Kernel Logo
+
+Python 3
+rained,25,80)
         elif packing_case==3:
             c_undrained=_clamp(c_undrained,80,150)
         elif packing_case==4:
             c_undrained=_clamp(c_undrained,150,400)
         # Plasix calculation needs very small c_undrained
-        _clamp(c_undrained,0.21,400)#use 0.2 as per plasix recommendation
+        _clamp(c_undrained,0.21,1e8)#use 0.2 as per plasix recommendation
         return c_undrained#the cu is always 103 check with small value of n_60, some mistake maybe
 
     def _get_packing_state(self):
@@ -107,18 +123,25 @@ class Material:
         s_phelp = [0,4,10,30,50]
         if self.is_clayey():
             s_phelp = [0,2,4,8,15,30]
-        packing_case = 5 # Packing cases as per table
+        packing_case = 0 # Packing cases as per table
         for i,value in enumerate(s_phelp):
             if self._data['n60']>value:
                 packing_case=i
         return packing_case
+
+    @staticmethod
+    def phi(N60):
+        """
+        Determine phi from N60
+        """
+        return 27.1 + 0.3*N60 - 0.00054* N60**2
 
     def _get_phi(self):
         """
         Get phi of soil
         #Many tables are used need to be refactred
         """
-        phi = 27.1 + 0.3*self._data['n60'] - 0.00054* self._data['n60']**2
+        phi = self.phi(self._data['n60'])
         group_index = self._data['GI']
         packing_case = self._data['_pc']
         if group_index[0]=='G':
@@ -171,6 +194,7 @@ class Material:
             else: #The OCR condition of cohesionless test cannot be determined, assume NC sand
                 elasticity= 10 * n_60 * 100
         # Now check value ranges
+        """
         if group_index[0] == 'S':
             if group_index[1] == 'M':
                 elasticity=_clamp(elasticity, 10_000, 20_000)
@@ -197,6 +221,7 @@ class Material:
                 elasticity=_clamp(elasticity, 2_000, 20_000)
             else:
                 elasticity=_clamp(elasticity, 10_000, 55_000)
+        """#remove clamp now
         return elasticity
 
     def __init__(self, input_data):
@@ -254,7 +279,10 @@ class LayerSoil:
         if no depth is given returns all saved materials
         """
         if depth is None:#Return all
-            return self._values
+            return self._values (unsaved changes) Current Kernel Logo
+
+Python 3
+
         if depth<self._values[0]['depth']:
             mat = copy.copy(self._values[0])
             mat['depth']=depth
