@@ -4,14 +4,15 @@ Terzaghi method for square fondation
 #Use interpolation based method since using formula is not giving result
 #Need fix
 
+from ..dmath import tan, cos, sin
+from math import exp, pi
+
 # (Note: from Boweles, Foundation analysis and design, "Terzaghi never
 # explained..how he obtained Kpr used to compute Nγ")
-
+# lets interpolate for Nγ
 #Terzaghi Table
 t_tables={}
 t_tables['phi']=[0,5,10,15,20,25,30,35,40,45,50]
-t_tables['nc']=[5.7,7.3,9.6,12.9,17.7,25.1,37.2,57.8,95.7,172.3,347.5]
-t_tables['nq']=[1,1.6,2.7,4.4,7.4,12.7,22.5,41.4,81.3,173.3,415.1]
 t_tables['ny']=[0,0.5,1.2,2.5,5,9.7,19.7,42.4,100.4,297.5,1153.0]
 
 def get_table(tables, var, phi):
@@ -44,14 +45,19 @@ class Terzaghi:
 
     @staticmethod
     def Nc(phi):
-        return get_table(t_tables, 'nc', phi)
+        if phi<1e-7:
+            phi=1e-7
+        return (Terzaghi.Nq(phi)-1)/tan(phi)
 
     @staticmethod
     def Nq(phi):
-        return get_table(t_tables, 'nq', phi)
+        return (exp(2*pi*(0.75-phi/360)*tan(phi))) /(2 * cos(45+phi/2)**2)
 
     @staticmethod
     def Ny(phi):
+        # return 2 * (Terzaghi.Nq(phi) + 1)* tan(phi) / (1+ 0.4*sin(4*pi))
+        # this formula has error of 10%
+        # better save table at 1deg interval
         return get_table(t_tables, 'ny', phi)
     
     def calculate(self, depth):
