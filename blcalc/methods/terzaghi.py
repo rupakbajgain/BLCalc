@@ -64,7 +64,8 @@ class Terzaghi:
         """
         Calcutate for provided depth
         """
-
+        mat = self._mat.get(depth)
+        return 1.3*mat['cu']*self.Nc(mat['phi']) + mat['q']*self.Nq(mat['phi'])*0.5 + 0.4*mat['gamma']*2*self.Ny(mat['phi'])*0.5
 
 if __name__ == "__main__":
     import doctest

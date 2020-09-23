@@ -214,6 +214,12 @@ class LayerSoil:
             mat['depth']=depth
             mat['q']=mat['gamma']*depth
             return mat
+        size = len(self._values)
+        if depth>self._values[size-1]['depth']:
+            mat = copy.copy(self._values[size-1])
+            mat['q']=mat['q']+mat['gamma']*(depth-mat['depth'])
+            mat['depth']=depth
+            return mat
         row=0
         while self._values[row]['depth']<depth:
             row+=1
