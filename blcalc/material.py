@@ -4,6 +4,8 @@ assume every soil is saturated for now
 """
 import copy
 
+from .base import Base
+
 def _group_index_correction(group_index):
     """
     The input group_index may not contain proper group_index as required by problem
@@ -32,7 +34,7 @@ def _clamp(value, amin, amax):
         return amax
     return value
 
-class Material:
+class Material(Base):
     """
     It is a single soil material for a layer,
     it takes SPT and other previously known material properties,
@@ -88,7 +90,7 @@ class Material:
         Get cohesion of soil
         """
         c_undrained=0
-        group_index = self._data['GI']
+        #group_index = self._data['GI']
         if self.is_clayey():
             c_undrained = self.qu(self._data['n60'])/2
             #c_undrained=_clamp(c_undrained, 10, 103)
@@ -156,6 +158,7 @@ class Material:
         """
         Save only use later when required
         """
+        Base.__init__(self)
         self._data = input_data
         self._data['GI'] = _group_index_correction(self._data['GI'])
         if 'n60' not in self._data:
@@ -175,12 +178,8 @@ class Material:
                 self._data['nu'] = 0.5
             else:
                 self._data['nu'] = 0.3
-
-    def get(self):
-        """
-        display material as as object
-        """
-        return self._data
+        #update data to this dict
+        self.set(self._data)
 
 class LayerSoil:
     """

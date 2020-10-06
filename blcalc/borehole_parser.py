@@ -5,6 +5,8 @@ later needs to be simplified
 """
 import re
 
+from .base import Base
+
 #use to split
 SPLIT_HELPER = re.compile('[(,) :]')
 TABLE_HEADER_HINTS = [
@@ -18,7 +20,7 @@ def _check_header_hit(text):
     for i in words:
         return i in TABLE_HEADER_HINTS
 
-class BoreholeLog:
+class BoreholeLog(Base):
     """
     Represent single log file
     """
@@ -531,6 +533,7 @@ class BoreholeLog:
         """
         This function determines the position of headers so they can be layer used by other parts
         """
+        Base.__init__(self)
         self._data = data
         self._header_pos = self._get_header_rows()
         if self._header_pos is None:
@@ -541,6 +544,7 @@ class BoreholeLog:
         self._map_var_row = self._get_map_var_row()
         self._cols = self._get_best_cols()
         self.values = self._analyse_sheet()
+        self.set(self.values)
 
 if __name__ == "__main__":
     import doctest
