@@ -14,6 +14,15 @@ class FootingType(Enum):
     Square = 'Square'
     Strip = 'Strip'
 
+class FootingData(Enum):
+    """
+    Diffrent datas to be stored for footing info
+    """
+    Type = 'Type'
+    Depth = 'Depth'
+    Width = 'Width'
+    Length = 'Length'
+
 class Footing(Base):
     """
     Footing base class

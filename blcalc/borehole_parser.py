@@ -6,6 +6,7 @@ later needs to be simplified
 import re
 
 from .base import Base
+from .soilproperty import SoilProperty
 
 #use to split
 SPLIT_HELPER = re.compile('[(,) :]')
@@ -516,16 +517,16 @@ class BoreholeLog(Base):
         for depth in all_depths:
             if depth==0.0:
                 continue
-            res={'depth': depth}
+            res={SoilProperty.depth : depth}
             row = find_data_row(depth)
-            res['spt'] = find_data(depth, map_d_s)
-            res['GI'] = find_data_by_row(row, group_data)
+            res[SoilProperty.SPT_N] = find_data(depth, map_d_s)
+            res[SoilProperty.GI] = find_data_by_row(row, group_data)
             if len(gamma_data)>0:
-                res['gamma'] = find_data_by_row(row, gamma_data)
+                res[SoilProperty.gamma] = find_data_by_row(row, gamma_data)
             #Analyse rem data if available
             rem_data = self._get_rem_data(row)
             for data_key in rem_data:
-                res[data_key] = rem_data[data_key]
+                res[SoilProperty(data_key)] = rem_data[data_key]
             out.append(res)
         return out
 

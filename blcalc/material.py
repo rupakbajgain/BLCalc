@@ -2,9 +2,17 @@
 Material, represents a single soil material,
 assume every soil is saturated for now
 """
+from enum import Enum
 import copy
 
 from .base import Base
+from .soilproperty import SoilProperty
+
+class MaterialData(Enum):
+    """
+    Soil material info
+    """
+    WaterDepth = 'WaterDepth'
 
 def _group_index_correction(group_index):
     """
@@ -45,7 +53,7 @@ class Material(Base):
         """
         Check first letter and determine if soil is clayey
         """
-        group_index = self._data['GI']
+        group_index = self._data[SoilProperty.GI]
         return group_index[1] not in ['S','G']
 
     def _get_n(self):
@@ -54,7 +62,7 @@ class Material(Base):
         No overburden is applied since we have shallow depth(more errors)
         - Dilitarcy correction is applied for sand
         """#@Needs to fix it for general case
-        n_60 = 0.55 * 1 * 1 * 0.75 * self._data['spt'] /0.6
+        n_60 = 0.55 * 1 * 1 * 0.75 * self._data[SoilProperty.SPT] /0.6
         if not self.is_clayey() and n_60>15: #apply dilitracy correction
             n_60 = 15 + 0.5 * (n_60 - 15)
         return n_60
@@ -65,9 +73,9 @@ class Material(Base):
         """
         gamma = None
         if self.is_clayey():
-            gamma = 16.8 + 0.15*self._data['n60']
+            gamma = 16.8 + 0.15*self._data[SoilProperty.N60]
         else:
-            gamma = 16 + 0.1 * self._data['n60']
+            gamma = 16 + 0.1 * self._data[SoilProperty.N60]
         gamma=_clamp(gamma,10,2.8*9.81)#do we need this
         return gamma
 
@@ -92,11 +100,11 @@ class Material(Base):
         c_undrained=0
         #group_index = self._data['GI']
         if self.is_clayey():
-            c_undrained = self.qu(self._data['n60'])/2
+            c_undrained = self.qu(self._data[SoilProperty.N60])/2
             #c_undrained=_clamp(c_undrained, 10, 103)
         # Plasix calculation needs very small c_undrained
-        if c_undrained<0.21:
-            c_undrained = 0.21
+        #if c_undrained<0.21:
+        #    c_undrained = 0.21
         #use 0.2 as per plasix recommendation
         return c_undrained#the cu is always 103 check with small value of n_60, some mistake maybe
 
@@ -110,7 +118,7 @@ class Material(Base):
             s_phelp = [0,2,4,8,15,30]
         packing_case = 0 # Packing cases as per table
         for i,value in enumerate(s_phelp):
-            if self._data['n60']>value:
+            if self._data[SoilProperty.N60]>value:
                 packing_case=i
         return packing_case
 
@@ -126,19 +134,19 @@ class Material(Base):
         Get phi of soil
         #Many tables are used need to be refactred
         """
-        phi = self.phi(self._data['n60'])
+        phi = self.phi(self._data[SoilProperty.N60])
         ### Ok let's remove for clay
         if self.is_clayey():
-            phi=0.01 #very small value for plasix
+            phi=0 #very small value for plasix:::@TODO 0.01
         return phi
 
     def _get_e(self):
         """
         Elasticity
         """
-        group_index = self._data['GI']
-        n_60 = self._data['n60']
-        packing_case = self._data['_pc']
+        group_index = self._data[SoilProperty.GI]
+        n_60 = self._data[SoilProperty.N60]
+        packing_case = self._data[SoilProperty.packing_case]
         elasticity=None
         if self.is_clayey():
             if packing_case==0:#15-40
@@ -160,45 +168,72 @@ class Material(Base):
         """
         Base.__init__(self)
         self._data = input_data
-        self._data['GI'] = _group_index_correction(self._data['GI'])
-        if 'n60' not in self._data:
-            self._data['n60'] = self._get_n()
-        if '_pc' not in self._data:
-            self._data['_pc'] = self._get_packing_state()
-        if 'gamma' not in self._data:
-            self._data['gamma'] = self._get_gamma()
-        if 'cu' not in self._data:
-            self._data['cu'] = self._get_cu()
-        if 'phi' not in self._data:
-            self._data['phi'] = self._get_phi()
-        if 'e' not in self._data:
-            self._data['e'] = self._get_e()
-        if 'nu' not in self._data:
+        self._data['GI'] = _group_index_correction(self._data[SoilProperty.GI])
+        if SoilProperty.N60 not in self._data:
+            self._data[SoilProperty.N60] = self._get_n()
+        if SoilProperty.packing_case not in self._data:
+            self._data[SoilProperty.packing_case] = self._get_packing_state()
+        if SoilProperty.gamma not in self._data:
+            self._data[SoilProperty.gamma] = self._get_gamma()
+        if SoilProperty.cohesion not in self._data:
+            self._data[SoilProperty.cohesion] = self._get_cu()
+        if SoilProperty.phi not in self._data:
+            self._data[SoilProperty.phi] = self._get_phi()
+        if SoilProperty.elasticity not in self._data:
+            self._data[SoilProperty.elasticity] = self._get_e()
+        if SoilProperty.nu not in self._data:
             if self.is_clayey():
-                self._data['nu'] = 0.5
+                self._data[SoilProperty.nu] = 0.5
             else:
-                self._data['nu'] = 0.3
+                self._data[SoilProperty.nu] = 0.3
         #update data to this dict
         self.set(self._data)
 
-class LayerSoil:
+class LayerSoil(Base):
     """
     Use to determine multiple layer of soil
     so include surchage info also
     """
-    def __init__(self, data):
+    def __init__(self, data, water_depth=0):
+        super().__init__(self)
+        self[MaterialData.WaterDepth] = water_depth
+        #@TODO: fix other datas based on water depth
         self._data = data
         self._values = []
         prev_surchage = 0.
         prev_depth = 0.
         for layer in data:
-            layer['q'] = prev_surchage
+            layer[SoilProperty.surcharge] = prev_surchage
             mat = Material(layer)
             res = mat.get()
-            new_depth = res['depth']
-            prev_surchage += res['gamma']*(new_depth-prev_depth)
+            new_depth = res[SoilProperty.depth]
+            prev_surchage += res[SoilProperty.gamma]*(new_depth-prev_depth)
             prev_depth=new_depth
             self._values.append(res)
+
+    def get_avg_N(self, depth=0.):
+        Ns = []# N values
+        depth = []#depth total values
+        row_start=0
+        while self._values[row_start][SoilProperty.depth]<depth/2:
+            row_start+=1
+        row_end = row_start
+        while self._values[row_end][SoilProperty.depth]<2*depth:
+            row_end+=1
+        if row_start==0:
+            depth.append(0.)
+        else:
+            depth.append(self._values[row_start-1][SoilProperty.depth])
+        for data in self._values[row_start:row_end]:
+            Ns.append(data[SoilProperty.N60])
+            depth.append(data[SoilProperty.depth])
+        total_ns = 0.
+        total_depth = 0.
+        for (row, N_value) in enumerate(Ns):
+            thickness = depth[row+1]-depth[row]
+            total_ns += N_value*thickness
+            total_depth += thickness
+        return total_ns/total_depth
 
     def get(self, depth=None):
         """
@@ -208,23 +243,23 @@ class LayerSoil:
         if depth is None:#Return all
             return self._values
 
-        if depth<self._values[0]['depth']:
+        if depth<self._values[0][SoilProperty.depth]:
             mat = copy.copy(self._values[0])
-            mat['depth']=depth
-            mat['q']=mat['gamma']*depth
+            mat[SoilProperty.depth]=depth
+            mat[SoilProperty.surcharge]=mat[SoilProperty.gamma]*depth
             return mat
         size = len(self._values)
-        if depth>self._values[size-1]['depth']:
+        if depth>self._values[size-1][SoilProperty.depth]:
             mat = copy.copy(self._values[size-1])
-            mat['q']=mat['q']+mat['gamma']*(depth-mat['depth'])
-            mat['depth']=depth
+            mat[SoilProperty.surcharge]=mat[SoilProperty.surcharge]+mat[SoilProperty.gamma]*(depth-mat[SoilProperty.depth])
+            mat[SoilProperty.depth]=depth
             return mat
         row=0
-        while self._values[row]['depth']<depth:
+        while self._values[row][SoilProperty.depth]<depth:
             row+=1
         mat = copy.copy(self._values[row])
-        mat['q']= mat['q'] - self._values[row-1]['gamma']*(mat['depth']-depth)
-        mat['depth']=depth
+        mat[SoilProperty.surcharge]= mat[SoilProperty.surcharge] - self._values[row-1][SoilProperty.gamma]*(mat[SoilProperty.depth]-depth)
+        mat[SoilProperty.depth]=depth
         return mat
 
 if __name__ == "__main__":
