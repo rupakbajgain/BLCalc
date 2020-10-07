@@ -54,7 +54,7 @@ class Material(Base):
         Check first letter and determine if soil is clayey
         """
         group_index = self._data[SoilProperty.GI]
-        return group_index[1] not in ['S','G']
+        return group_index[0] not in ['S','G']
 
     def _get_n(self):
         """
@@ -62,7 +62,7 @@ class Material(Base):
         No overburden is applied since we have shallow depth(more errors)
         - Dilitarcy correction is applied for sand
         """#@Needs to fix it for general case
-        n_60 = 0.55 * 1 * 1 * 0.75 * self._data[SoilProperty.SPT] /0.6
+        n_60 = 0.55 * 1 * 1 * 0.75 * self._data[SoilProperty.SPT_N] /0.6
         if not self.is_clayey() and n_60>15: #apply dilitracy correction
             n_60 = 15 + 0.5 * (n_60 - 15)
         return n_60
@@ -168,7 +168,7 @@ class Material(Base):
         """
         Base.__init__(self)
         self._data = input_data
-        self._data['GI'] = _group_index_correction(self._data[SoilProperty.GI])
+        self._data[SoilProperty.GI] = _group_index_correction(self._data[SoilProperty.GI])
         if SoilProperty.N60 not in self._data:
             self._data[SoilProperty.N60] = self._get_n()
         if SoilProperty.packing_case not in self._data:
@@ -213,7 +213,7 @@ class LayerSoil(Base):
 
     def get_avg_N(self, depth=0.):
         Ns = []# N values
-        depth = []#depth total values
+        depths = []#depth total values
         row_start=0
         while self._values[row_start][SoilProperty.depth]<depth/2:
             row_start+=1
@@ -221,16 +221,16 @@ class LayerSoil(Base):
         while self._values[row_end][SoilProperty.depth]<2*depth:
             row_end+=1
         if row_start==0:
-            depth.append(0.)
+            depths.append(0.)
         else:
             depth.append(self._values[row_start-1][SoilProperty.depth])
         for data in self._values[row_start:row_end]:
             Ns.append(data[SoilProperty.N60])
-            depth.append(data[SoilProperty.depth])
+            depths.append(data[SoilProperty.depth])
         total_ns = 0.
         total_depth = 0.
         for (row, N_value) in enumerate(Ns):
-            thickness = depth[row+1]-depth[row]
+            thickness = depths[row+1]-depths[row]
             total_ns += N_value*thickness
             total_depth += thickness
         return total_ns/total_depth

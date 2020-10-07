@@ -11,8 +11,9 @@ from .methods.meyerhof import Meyerhof
 from .methods.hansen import Hansen
 from .methods.vesic import Vesic
 from .methods.bowels import Bowels
-from .methods.is import IS
+from .methods.IS import IS
 from .methods.teng import Teng
+from .soilproperty import SoilProperty
 
 class Methods(Enum):
     """
@@ -47,7 +48,7 @@ class Solver:
                     self._soilLayer[MaterialData.WaterDepth]
                 )
         footing_type = self._footing[FootingData.Type]
-        mat = self._soilLayer.get(FootingData.Depth)
+        mat = self._soilLayer.get(self._footing[FootingData.Depth])
         if footing_type==FootingType.Circular:
             return terzaghi.circular_capacity(
                         mat[SoilProperty.cohesion],
@@ -75,7 +76,7 @@ class Solver:
                     self._footing[FootingData.Depth],
                     self._soilLayer[MaterialData.WaterDepth]
                 )
-        mat = self._soilLayer.get(FootingData.Depth)
+        mat = self._soilLayer.get(self._footing[FootingData.Depth])
         return meyerhof.capacity(
                     mat[SoilProperty.cohesion],
                     mat[SoilProperty.phi],
@@ -90,7 +91,7 @@ class Solver:
                     self._footing[FootingData.Depth],
                     self._soilLayer[MaterialData.WaterDepth]
                 )
-        mat = self._soilLayer.get(FootingData.Depth)
+        mat = self._soilLayer.get(self._footing[FootingData.Depth])
         return hansen.capacity(
                     mat[SoilProperty.cohesion],
                     mat[SoilProperty.phi],
@@ -105,7 +106,7 @@ class Solver:
                     self._footing[FootingData.Depth],
                     self._soilLayer[MaterialData.WaterDepth]
                 )
-        mat = self._soilLayer.get(FootingData.Depth)
+        mat = self._soilLayer.get(self._footing[FootingData.Depth])
         return vesic.capacity(
                     mat[SoilProperty.cohesion],
                     mat[SoilProperty.phi],
@@ -115,25 +116,25 @@ class Solver:
                 )
 
     def calc_bowels(self):
-        avg_N60 = self._soilLayer.get_avg_N(FootingData.Depth)
+        avg_N60 = self._soilLayer.get_avg_N(self._footing[FootingData.Depth])
         return Bowels.capacity(
-            N60,
+            avg_N60,
             self._footing[FootingData.Depth],
             self._footing[FootingData.Width]
         )
 
     def calc_IS(self):
-        avg_N60 = self._soilLayer.get_avg_N(FootingData.Depth)
+        avg_N60 = self._soilLayer.get_avg_N(self._footing[FootingData.Depth])
         return IS.capacity(
-            N60,
+            avg_N60,
             self._footing[FootingData.Depth],
             self._footing[FootingData.Width]
         )
 
     def calc_teng(self):
-        avg_N60 = self._soilLayer.get_avg_N(FootingData.Depth)
+        avg_N60 = self._soilLayer.get_avg_N(self._footing[FootingData.Depth])
         return Teng.capacity(
-            N60,
+            avg_N60,
             self._footing[FootingData.Depth],
             self._footing[FootingData.Width],
             self._soilLayer[MaterialData.WaterDepth]

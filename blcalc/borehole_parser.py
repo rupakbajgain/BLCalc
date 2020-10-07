@@ -545,7 +545,7 @@ class BoreholeLog(Base):
         self._map_var_row = self._get_map_var_row()
         self._cols = self._get_best_cols()
         self.values = self._analyse_sheet()
-        self.set(self.values)
+        #self.set(self.values)
 
 if __name__ == "__main__":
     import doctest

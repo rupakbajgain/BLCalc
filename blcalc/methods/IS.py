@@ -10,6 +10,6 @@ class IS:
     """
     IS method for 40mm settlement
     """
-    @static_method
+    @staticmethod
     def capacity(N60, W, width_footing):
         return (N60-3)*((width_footing+0.3)/(2*width_footing))**2 * W

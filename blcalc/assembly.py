@@ -17,10 +17,10 @@ class Assembly(Base):
     """
     Combine both footing and layers to one
     """
-    def __init__(self):
+    def __init__(self, footing=None, soil_layer=None):
         Base.__init__(self)
-        self[AssemblyType.Footing] = None
-        self[AssemblyType.SoilLayer] = None
+        self[AssemblyType.Footing] = footing
+        self[AssemblyType.SoilLayer] = soil_layer
 
 if __name__ == "__main__":
     import doctest

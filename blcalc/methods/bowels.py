@@ -12,7 +12,7 @@ class Bowels:
         if kd>1.33:
             kd=1.33
         S0 = 25 #seviceability settlement mm
-        if footing_width<1.22:
+        if width_footing<1.22:
             return 19.16*N60*kd*(S0/25.4)
         return 11.98*N60* ((3.28*width_footing+1)/3.28*width_footing)**2 *  kd * (S0*25.4)
 """

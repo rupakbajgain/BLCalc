@@ -14,7 +14,8 @@ class Meyerhof:
         """
         calculate same as terzaghi and save
         """
-        Terzaghi.__init__(self, width_footing, depth_footing, water_depth): #Process same as terzaghi for water level correction
+        Terzaghi.water_level_correction(self, width_footing, depth_footing, water_depth)
+        #Process same as terzaghi for water level correction
 
     @staticmethod
     def Nc(phi):
@@ -60,7 +61,7 @@ class Meyerhof:
             iy = (1 - inclination_angle/phi)**2
         """
         c_term = cohesion*self.Nc(phi)*sc*dc
-        q_term = surchage*self.Nq(self)*sq*dq
+        q_term = surchage*self.Nq(phi)*sq*dq
         y_term = 0.5*gamma*self.width_footing*self.Ny(phi)*sy*dy
         return c_term+q_term*self.rw1+y_term*self.rw2
 
