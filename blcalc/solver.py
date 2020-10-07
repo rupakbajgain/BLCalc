@@ -27,6 +27,8 @@ class Methods(Enum):
     IS = 'IS'
     Teng = 'Teng'
 
+FOS = 3
+
 class Solver:
     """
     Apply appropriate method based on data provided
@@ -55,20 +57,20 @@ class Solver:
                         mat[SoilProperty.phi],
                         mat[SoilProperty.gamma],
                         mat[SoilProperty.surcharge]
-                    )
+                    ) / FOS
         elif footing_type==FootingType.Square:
             return terzaghi.square_capacity(
                         mat[SoilProperty.cohesion],
                         mat[SoilProperty.phi],
                         mat[SoilProperty.gamma],
                         mat[SoilProperty.surcharge]
-                    )
+                    ) / FOS
         return terzaghi.strip_capacity(
                         mat[SoilProperty.cohesion],
                         mat[SoilProperty.phi],
                         mat[SoilProperty.gamma],
                         mat[SoilProperty.surcharge]
-                    )
+                    ) / FOS
 
     def calc_meyerhoff(self):
         meyerhof = Meyerhof(
@@ -83,7 +85,7 @@ class Solver:
                     mat[SoilProperty.gamma],
                     self._footing[FootingData.Length],
                     mat[SoilProperty.surcharge]
-                )
+                ) / FOS
 
     def calc_hansen(self):
         hansen = Hansen(
@@ -98,7 +100,7 @@ class Solver:
                     mat[SoilProperty.gamma],
                     self._footing[FootingData.Length],
                     mat[SoilProperty.surcharge]
-                )
+                ) / FOS
 
     def calc_vesic(self):
         vesic = Vesic(
@@ -113,7 +115,7 @@ class Solver:
                     mat[SoilProperty.gamma],
                     self._footing[FootingData.Length],
                     mat[SoilProperty.surcharge]
-                )
+                ) / FOS
 
     def calc_bowels(self):
         avg_N60 = self._soilLayer.get_avg_N(self._footing[FootingData.Depth])

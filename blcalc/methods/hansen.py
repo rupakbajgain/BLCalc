@@ -28,7 +28,7 @@ class Hansen:
     @staticmethod
     def Ny(phi):
         return 1.5*(Hansen.Nq(phi)-1)*tan(phi)
-    
+
     def shape_and_depth_factors(self, length_footing, phi):
         """
         Calculate and save shape and depth factors
@@ -40,7 +40,7 @@ class Hansen:
         self.dc = 1 +0.4*self.width_footing/length_footing
         self.dq = 1 +2*tan(phi)*(1-sin(phi))**2 * self.depth_footing/self.width_footing
         self.dy=1
-    
+
     def capacity(self, cohesion, phi, gamma, length_footing, surchage=0):
         """
         Calcutate for provided depth
